@@ -1,39 +1,19 @@
 class Address {
-  constructor(street, city, country) {
-    this.street = street;
+  constructor(suite, streetAddress, city) {
+    this.suite = suite;
+    this.streetAddress = streetAddress;
     this.city = city;
-    this.country = country;
-  }
-
-  /**
-   * Creates a deep copy of the Address object
-   *
-   * @return {*}
-   * @memberof Address
-   */
-  deepCopy() {
-    return new Address(this.street, this.city, this.country);
   }
 
   toString() {
-    return `Address: ${this.street}, ${this.city}, ${this.country}`;
+    return `Suite ${this.suite}, ${this.streetAddress}, ${this.city}`;
   }
 }
 
-class Person {
+class Employee {
   constructor(name, address) {
     this.name = name;
     this.address = address;
-  }
-
-  /**
-   * Creates a deep copy of the Person object
-   *
-   * @return {*}
-   * @memberof Person
-   */
-  deepCopy() {
-    return new Person(this.name, this.address.deepCopy());
   }
 
   toString() {
@@ -57,7 +37,7 @@ class Serializer {
     // Find the type
     const idx = this.types.findIndex((t) => t.name === object.constructor.name);
 
-    if (idx < 0) {
+    if (idx === -1) {
       return;
     }
 
@@ -67,7 +47,7 @@ class Serializer {
     // Iterate over the object properties
     // To find nested Types
     for (const key in object) {
-      if (!object.hasOwnProperty(key) || object[key] === null) {
+      if (!object.hasOwnProperty(key) || object[key] == null) {
         continue;
       }
 
@@ -111,36 +91,38 @@ class Serializer {
   }
 }
 
-const diego = new Person(
-  "Diego",
-  new Address("123Az Main St", "Maracaibo", "Venezuela")
-);
 
-// Create DeepCopy for each nested object is a tedious task
-const jalinson = diego.deepCopy();
+class EmployeeFactory
+{
+  static _newEmployee(proto, name, suite)
+  {
+    let copy = EmployeeFactory.serializer.clone(proto);
+    copy.name = name;
+    copy.address.suite = suite;
+    return copy;
+  }
 
-jalinson.name = "Jalinson";
-jalinson.address.street = "123B Main St";
+  static newMainOfficeEmployee(name, suite)
+  {
+    return this._newEmployee(
+      EmployeeFactory.main, name, suite
+    );
+  }
 
-console.log(diego.toString());
-console.log(jalinson.toString());
+  static newAuxOfficeEmployee(name, suite)
+  {
+    return this._newEmployee(
+      EmployeeFactory.aux, name, suite
+    );
+  }
+}
 
-// Copy through Serialization
-const adrian = JSON.parse(JSON.stringify(diego));
+EmployeeFactory.serializer = new Serializer([Employee, Address]);
+EmployeeFactory.main = new Employee(null, new Address(null, '123 East Dr', 'London'));
+EmployeeFactory.aux = new Employee(null, new Address(null, '200 London Road', 'Oxford'));
 
-adrian.name = "Adrian";
-adrian.address.street = "123C Main St";
+let john = EmployeeFactory.newMainOfficeEmployee('John', 4321);
+let jane = EmployeeFactory.newAuxOfficeEmployee('Jane', 222);
 
-// The methods are lost. This will fail
-// console.log(Adrian.toString());
-// We just copy the values/properties
-console.log(adrian.name);
-
-// try a dedicated serializer
-const s = new Serializer([Person, Address]); // pain point
-const andres = s.clone(diego);
-
-andres.name = "Andres";
-andres.address.street = "123D Main St";
-
-console.log(andres.toString());
+console.log(john.toString());
+console.log(jane.toString());
